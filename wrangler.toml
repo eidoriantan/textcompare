@@ -2,9 +2,5 @@ name = "textcompare"
 compatibility_date = "2026-09-27"
 workers_dev = false
 
-[assets]
-directory = "./"
-not_found_handling = "single-page-application"
-
 [observability]
 enabled = false
