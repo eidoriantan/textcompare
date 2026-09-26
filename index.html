@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Text Compare</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#14161b;
+    --panel:#1b1e25;
+    --ink:#e8e6df;
+    --ink-soft:#8b8e99;
+    --line:#2b2e37;
+    --accent:#6fae9d;
+    --accent-ink:#0d1210;
+    --add-bg:#1e3126;
+    --add-ink:#7fcb9d;
+    --add-border:#3a6b4c;
+    --del-bg:#3a2222;
+    --del-ink:#e08b7f;
+    --del-border:#6b3d38;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+  }
+  header{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:16px;
+    padding:28px clamp(16px,4vw,48px) 18px;
+    border-bottom:1px solid var(--line);
+    flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:baseline;gap:10px;}
+  .brand h1{
+    font-family:'Source Serif 4',serif;
+    font-weight:600;
+    font-size:1.5rem;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .brand span{
+    color:var(--ink-soft);
+    font-size:0.85rem;
+  }
+  .stats{
+    display:flex;
+    gap:14px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.82rem;
+    color:var(--ink-soft);
+  }
+  .stats b.add{color:var(--add-ink);}
+  .stats b.del{color:var(--del-ink);}
+
+  main{padding:24px clamp(16px,4vw,48px) 60px;}
+
+  .inputs{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+  }
+  @media (max-width:760px){ .inputs{grid-template-columns:1fr;} }
+
+  .pane{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .pane-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 14px;
+    border-bottom:1px solid var(--line);
+  }
+  .pane-head h2{
+    font-size:0.78rem;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--ink-soft);
+    margin:0;
+    font-weight:600;
+  }
+  .mode-toggle{
+    display:flex;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:7px;
+    overflow:hidden;
+  }
+  .mode-toggle button{
+    border:none;
+    background:transparent;
+    padding:5px 10px;
+    font-size:0.72rem;
+    font-family:'Inter',sans-serif;
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .mode-toggle button.active{
+    background:var(--accent);
+    color:var(--accent-ink);
+  }
+  .pane-body{padding:0;position:relative;min-height:180px;}
+  textarea{
+    width:100%;
+    min-height:220px;
+    resize:vertical;
+    border:none;
+    outline:none;
+    padding:14px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.85rem;
+    line-height:1.5;
+    color:var(--ink);
+    background:transparent;
+  }
+  .drop{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:220px;
+    padding:20px;
+    text-align:center;
+    border:1.5px dashed var(--line);
+    margin:12px;
+    border-radius:8px;
+    color:var(--ink-soft);
+    font-size:0.85rem;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  .drop.dragover{
+    border-color:var(--accent);
+    background:#1b2420;
+  }
+  .drop input{display:none;}
+  .drop strong{color:var(--ink);font-size:0.9rem;}
+  .filename{
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.78rem;
+    color:var(--accent);
+    background:#1b2420;
+    padding:2px 8px;
+    border-radius:5px;
+  }
+  .hidden{display:none !important;}
+
+  .actions{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    margin:26px 0;
+  }
+  button.primary{
+    background:var(--accent);
+    color:var(--accent-ink);
+    border:none;
+    padding:11px 26px;
+    border-radius:8px;
+    font-size:0.92rem;
+    font-family:'Inter',sans-serif;
+    font-weight:500;
+    cursor:pointer;
+    letter-spacing:0.01em;
+  }
+  button.primary:hover{opacity:0.92;}
+  button.ghost{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink-soft);
+    padding:10px 18px;
+    border-radius:8px;
+    font-size:0.85rem;
+    cursor:pointer;
+  }
+
+  .result-wrap{display:none;}
+  .result-wrap.show{display:block;}
+  .result-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:10px;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .result-head h2{
+    font-family:'Source Serif 4',serif;
+    font-size:1.1rem;
+    margin:0;
+    font-weight:600;
+  }
+  .view-toggle{
+    display:flex;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:7px;
+    overflow:hidden;
+  }
+  .view-toggle button{
+    border:none;
+    background:transparent;
+    padding:6px 14px;
+    font-size:0.78rem;
+    color:var(--ink-soft);
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .view-toggle button.active{background:var(--accent);color:var(--accent-ink);}
+
+  .diff-panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:auto;
+    max-height:70vh;
+  }
+  table.diff{
+    border-collapse:collapse;
+    width:100%;
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.82rem;
+  }
+  table.diff td{
+    padding:2px 10px;
+    vertical-align:top;
+    white-space:pre-wrap;
+    word-break:break-word;
+  }
+  td.num{
+    color:#565a66;
+    text-align:right;
+    user-select:none;
+    width:1%;
+    white-space:nowrap;
+    border-right:1px solid var(--line);
+  }
+  tr.add td.content{background:var(--add-bg);}
+  tr.del td.content{background:var(--del-bg);}
+  tr.add td.num,tr.del td.num{background:transparent;}
+  .tok-add{background:var(--add-border);border-radius:2px;}
+  .tok-del{background:var(--del-border);border-radius:2px;text-decoration:line-through;}
+  .empty-cell{background:repeating-linear-gradient(135deg,transparent,transparent 6px,#20232b 6px,#20232b 7px);}
+  .same-note{
+    text-align:center;
+    padding:40px 20px;
+    color:var(--ink-soft);
+    font-family:'Source Serif 4',serif;
+    font-size:1.05rem;
+  }
+
+  footer{
+    text-align:center;
+    padding:20px;
+    color:var(--ink-soft);
+    font-size:0.75rem;
+  }
+  footer p{margin:0 0 6px;}
+  footer a{color:var(--accent);text-decoration:none;}
+  footer a:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>Text Compare</h1>
+    <span>line &amp; word level diff</span>
+  </div>
+  <div class="stats hidden" id="statsBar">
+    <span><b class="add" id="addCount">+0</b> added</span>
+    <span><b class="del" id="delCount">-0</b> removed</span>
+    <span id="sameNote"></span>
+  </div>
+</header>
+
+<main>
+  <div class="inputs">
+    <div class="pane" data-side="a">
+      <div class="pane-head">
+        <h2>Original</h2>
+        <div class="mode-toggle">
+          <button data-mode="paste" class="active">Paste</button>
+          <button data-mode="file">Upload</button>
+        </div>
+      </div>
+      <div class="pane-body">
+        <textarea placeholder="Paste the original text here…" class="input-text"></textarea>
+        <label class="drop hidden">
+          <input type="file" accept=".txt,.md,.csv,.json,.js,.py,.html,.css,text/*">
+          <strong>Drop a file here</strong>
+          <span>or click to browse</span>
+          <span class="filename hidden"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="pane" data-side="b">
+      <div class="pane-head">
+        <h2>Revised</h2>
+        <div class="mode-toggle">
+          <button data-mode="paste" class="active">Paste</button>
+          <button data-mode="file">Upload</button>
+        </div>
+      </div>
+      <div class="pane-body">
+        <textarea placeholder="Paste the revised text here…" class="input-text"></textarea>
+        <label class="drop hidden">
+          <input type="file" accept=".txt,.md,.csv,.json,.js,.py,.html,.css,text/*">
+          <strong>Drop a file here</strong>
+          <span>or click to browse</span>
+          <span class="filename hidden"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="primary" id="compareBtn">Compare texts</button>
+    <button class="ghost" id="clearBtn">Clear all</button>
+  </div>
+
+  <div class="result-wrap" id="resultWrap">
+    <div class="result-head">
+      <h2>Differences</h2>
+      <div class="view-toggle">
+        <button data-view="split" class="active">Side by side</button>
+        <button data-view="unified">Unified</button>
+      </div>
+    </div>
+    <div class="diff-panel">
+      <table class="diff" id="diffTable"></table>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p>Everything runs in your browser — no text is uploaded anywhere.</p>
+  <p>&copy; <span id="year"></span> <a href="https://eidoriantan.com" target="_blank" rel="noopener">@eidoriantan</a></p>
+</footer>
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+
+<script>
+(function(){
+  // ---------- pane wiring (paste / upload) ----------
+  document.querySelectorAll('.pane').forEach(pane=>{
+    const buttons = pane.querySelectorAll('.mode-toggle button');
+    const textarea = pane.querySelector('textarea');
+    const drop = pane.querySelector('.drop');
+    const fileInput = pane.querySelector('input[type=file]');
+    const filenameTag = pane.querySelector('.filename');
+
+    buttons.forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        buttons.forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        if(btn.dataset.mode==='paste'){
+          textarea.classList.remove('hidden');
+          drop.classList.add('hidden');
+        } else {
+          textarea.classList.add('hidden');
+          drop.classList.remove('hidden');
+        }
+      });
+    });
+
+    function readFile(file){
+      const reader = new FileReader();
+      reader.onload = e=>{
+        textarea.value = e.target.result;
+        filenameTag.textContent = file.name;
+        filenameTag.classList.remove('hidden');
+      };
+      reader.readAsText(file);
+    }
+
+    fileInput.addEventListener('change', e=>{
+      if(e.target.files[0]) readFile(e.target.files[0]);
+    });
+    drop.addEventListener('dragover', e=>{ e.preventDefault(); drop.classList.add('dragover'); });
+    drop.addEventListener('dragleave', ()=> drop.classList.remove('dragover'));
+    drop.addEventListener('drop', e=>{
+      e.preventDefault();
+      drop.classList.remove('dragover');
+      if(e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]);
+    });
+  });
+
+  document.getElementById('clearBtn').addEventListener('click', ()=>{
+    document.querySelectorAll('textarea').forEach(t=>t.value='');
+    document.querySelectorAll('.filename').forEach(f=>{f.textContent='';f.classList.add('hidden');});
+    document.getElementById('resultWrap').classList.remove('show');
+    document.getElementById('statsBar').classList.add('hidden');
+  });
+
+  // ---------- diff engine (LCS based) ----------
+  function lcsDiff(a, b){
+    // a, b: arrays of tokens (lines or words)
+    const n=a.length, m=b.length;
+    const dp = Array.from({length:n+1},()=>new Int32Array(m+1));
+    for(let i=n-1;i>=0;i--){
+      for(let j=m-1;j>=0;j--){
+        dp[i][j] = a[i]===b[j] ? dp[i+1][j+1]+1 : Math.max(dp[i+1][j], dp[i][j+1]);
+      }
+    }
+    const ops=[];
+    let i=0,j=0;
+    while(i<n && j<m){
+      if(a[i]===b[j]){ ops.push(['same',a[i]]); i++; j++; }
+      else if(dp[i+1][j] >= dp[i][j+1]){ ops.push(['del',a[i]]); i++; }
+      else { ops.push(['add',b[j]]); j++; }
+    }
+    while(i<n){ ops.push(['del',a[i]]); i++; }
+    while(j<m){ ops.push(['add',b[j]]); j++; }
+    return ops;
+  }
+
+  function wordTokens(line){
+    return line.match(/\s+|[^\s]+/g) || [''];
+  }
+
+  function escapeHtml(s){
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function wordDiffHtml(oldLine, newLine){
+    const wa = wordTokens(oldLine), wb = wordTokens(newLine);
+    const ops = lcsDiff(wa, wb);
+    let left='', right='';
+    ops.forEach(([type,tok])=>{
+      const t = escapeHtml(tok);
+      if(type==='same'){ left+=t; right+=t; }
+      else if(type==='del'){ left+=`<span class="tok-del">${t}</span>`; }
+      else { right+=`<span class="tok-add">${t}</span>`; }
+    });
+    return [left,right];
+  }
+
+  function computeGroupedDiff(textA, textB){
+    const la = textA.split('\n');
+    const lb = textB.split('\n');
+    const raw = lcsDiff(la, lb);
+
+    // group consecutive del/add runs so we can pair up modified lines
+    const groups=[];
+    let i=0;
+    while(i<raw.length){
+      const [type] = raw[i];
+      if(type==='same'){ groups.push([raw[i]]); i++; continue; }
+      const dels=[], adds=[];
+      while(i<raw.length && raw[i][0]==='del'){ dels.push(raw[i][1]); i++; }
+      while(i<raw.length && raw[i][0]==='add'){ adds.push(raw[i][1]); i++; }
+      groups.push({dels,adds});
+    }
+    return groups;
+  }
+
+  let addCount=0, delCount=0;
+
+  function render(){
+    const [ta, tb] = document.querySelectorAll('.input-text');
+    const textA = ta.value.replace(/\r\n/g,'\n');
+    const textB = tb.value.replace(/\r\n/g,'\n');
+    const groups = computeGroupedDiff(textA, textB);
+
+    addCount=0; delCount=0;
+    const rows=[];
+    let lnA=1, lnB=1;
+
+    groups.forEach(g=>{
+      if(Array.isArray(g)){
+        const [,line]=g[0];
+        rows.push({type:'same', a:line, b:line, lnA:lnA++, lnB:lnB++});
+        return;
+      }
+      const {dels,adds}=g;
+      const pairCount = Math.min(dels.length, adds.length);
+      for(let k=0;k<pairCount;k++){
+        const [l,r] = wordDiffHtml(dels[k], adds[k]);
+        rows.push({type:'mod', a:l, b:r, lnA:lnA++, lnB:lnB++});
+        delCount++; addCount++;
+      }
+      for(let k=pairCount;k<dels.length;k++){
+        rows.push({type:'del', a:escapeHtml(dels[k]), b:null, lnA:lnA++, lnB:null});
+        delCount++;
+      }
+      for(let k=pairCount;k<adds.length;k++){
+        rows.push({type:'add', a:null, b:escapeHtml(adds[k]), lnA:null, lnB:lnB++});
+        addCount++;
+      }
+    });
+
+    document.getElementById('addCount').textContent = '+'+addCount;
+    document.getElementById('delCount').textContent = '-'+delCount;
+    document.getElementById('statsBar').classList.remove('hidden');
+
+    const table = document.getElementById('diffTable');
+    const view = document.querySelector('.view-toggle button.active').dataset.view;
+    table.innerHTML='';
+
+    if(addCount===0 && delCount===0){
+      table.innerHTML = `<tr><td class="same-note">The two texts are identical.</td></tr>`;
+      document.getElementById('resultWrap').classList.add('show');
+      return;
+    }
+
+    if(view==='split'){
+      rows.forEach(r=>{
+        const trClass = r.type==='mod' ? '' : (r.type==='add' ? 'add' : (r.type==='del' ? 'del':''));
+        const leftContent = r.a===null ? '' : r.a;
+        const rightContent = r.b===null ? '' : r.b;
+        const leftCellClass = r.a===null ? 'content empty-cell' : (r.type==='del'?'content':(r.type==='mod'?'content del':'content'));
+        const rightCellClass = r.b===null ? 'content empty-cell' : (r.type==='add'?'content':(r.type==='mod'?'content add':'content'));
+        table.innerHTML += `<tr class="${r.type==='mod'?'':trClass}">
+          <td class="num">${r.lnA??''}</td>
+          <td class="${r.type==='del'?'content':(r.type==='mod'?'content':'content')}" style="background:${r.type==='del'?'var(--del-bg)':(r.type==='mod'?'var(--del-bg)':(r.a===null?'transparent':'transparent'))}">${leftContent}</td>
+          <td class="num">${r.lnB??''}</td>
+          <td class="content" style="background:${r.type==='add'?'var(--add-bg)':(r.type==='mod'?'var(--add-bg)':'transparent')}">${rightContent}</td>
+        </tr>`;
+      });
+    } else {
+      rows.forEach(r=>{
+        if(r.type==='same'){
+          table.innerHTML += `<tr><td class="num">${r.lnA}</td><td class="content">${escapeHtml(r.a)}</td></tr>`;
+        } else if(r.type==='mod'){
+          table.innerHTML += `<tr class="del"><td class="num">${r.lnA}</td><td class="content">− ${r.a}</td></tr>`;
+          table.innerHTML += `<tr class="add"><td class="num">${r.lnB}</td><td class="content">+ ${r.b}</td></tr>`;
+        } else if(r.type==='del'){
+          table.innerHTML += `<tr class="del"><td class="num">${r.lnA}</td><td class="content">− ${r.a}</td></tr>`;
+        } else {
+          table.innerHTML += `<tr class="add"><td class="num">${r.lnB}</td><td class="content">+ ${r.b}</td></tr>`;
+        }
+      });
+    }
+
+    document.getElementById('resultWrap').classList.add('show');
+  }
+
+  document.getElementById('compareBtn').addEventListener('click', render);
+
+  document.querySelectorAll('.view-toggle button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.view-toggle button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      if(document.getElementById('resultWrap').classList.contains('show')) render();
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "textcompare",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Simple project for comparing / diff text in browser",
+  "license": "MIT",
+  "bugs": "https://github.com/eidoriantan/textcompare/issues",
+  "homepage": "https://textcompare.eidoriantan.com",
+  "author": {
+    "name": "Adriane Justine Tan",
+    "email": "me@eidoriantan.com",
+    "url": "https://eidoriantan.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eidoriantan/textcompare.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
