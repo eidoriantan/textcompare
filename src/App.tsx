@@ -7,6 +7,7 @@ import {
   AlignJustify,
   ChevronUp,
   ChevronDown,
+  ArrowLeftRight,
 } from "lucide-react";
 
 import { buildRows } from "./lcs/compare";
@@ -63,6 +64,18 @@ export default function App() {
   const goNext = () => goTo(current + 1);
   const goPrev = () => goTo(current === -1 ? blocks.length - 1 : current - 1);
 
+  const swap = () => {
+    setTextA(textB);
+    setTextB(textA);
+    setFileNameA(fileNameB);
+    setFileNameB(fileNameA);
+
+    if (result) {
+      setResult(buildRows(textB.replace(/\r\n/g, "\n"), textA.replace(/\r\n/g, "\n")));
+      setCurrent(-1);
+    }
+  };
+
   const compare = () => {
     setResult(buildRows(textA.replace(/\r\n/g, "\n"), textB.replace(/\r\n/g, "\n")));
     setCurrent(-1);
@@ -118,6 +131,12 @@ export default function App() {
             className="flex items-center gap-2 rounded-lg bg-emerald-700 px-6 py-2.5 text-[0.92rem] font-medium text-emerald-50 hover:bg-emerald-600 transition-colors"
           >
             <GitCompare size={16} /> Compare texts
+          </button>
+          <button
+            onClick={swap}
+            className="flex items-center gap-2 rounded-lg border border-neutral-800 px-4 py-2.5 text-sm text-neutral-400 hover:text-neutral-200 hover:border-neutral-700 transition-colors"
+          >
+            <ArrowLeftRight size={14} /> Swap
           </button>
           <button
             onClick={clearAll}
